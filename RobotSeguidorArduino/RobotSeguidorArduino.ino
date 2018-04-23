@@ -1,24 +1,21 @@
-//----------------Variables de señales de sensores-----------------------------
+//----------------Variables de señales de sensor HCRS04-----------------------------
 int trigger = 13;
 int echo = 12;
+
+//----------------Variables de control del motor------------------------------
 int enable1 = 10;
 int int1 = 9;
 int int2 = 8;
-int sharp = A1;
-String datamotor[2];
 double pwm = 0;
-int sentido;
 
-
-//-----------------------------Datos a enviar---------------------------------
-int timeHCSR04;
+//-----------------------------Datos a enviar a C#---------------------------------
+int timeHCSR04 = 0;
 
 
 void setup() {
   //--------------Estableciendo velocidad de transmición de datos--------------
   Serial.begin(9600);
   //--------------Declarando pines de entrada y salida-------------------------
-  pinMode(sharp, INPUT);
   pinMode(echo, INPUT);
   pinMode(trigger, OUTPUT);
   pinMode(int1, OUTPUT);
@@ -30,25 +27,10 @@ void loop()
   //-----------Leyendo datos del buffer de entrada del arduino-------------------
   if(Serial.available() > 0)
   {
-    String data = Serial.readStringUntil('\n');
-    pwm = data.toDouble();
+    String dataArrive = Serial.readStringUntil('\n');
+    pwm = dataArrive.toDouble();
     
-    if(pwm > 0)
-    {
-      digitalWrite(int1,HIGH);
-      digitalWrite(int2,LOW);
-    }
-  
-    else if(pwm == 0)
-    {
-      digitalWrite(int1,LOW);
-      digitalWrite(int2,LOW);
-    }
-    else
-    {
-      digitalWrite(int1,LOW);
-      digitalWrite(int2,HIGH);
-    }
+    turn(pwm);
   }
   
   //-------Preparando señal de disparo para activar el sensor HC-SR04----------
@@ -60,20 +42,42 @@ void loop()
   
   //---------Midiendo tiempo de ida y retorno de pulso ultrasónico-------------
   timeHCSR04 = pulseIn(echo, HIGH);
+
+  //---------Mandando datos del arduino a C#----------------------------------
+  SentDatas(timeHCSR04);
+
+  //-----------Activando motor con pwm----------------------------------------
+  Motor(pwm);
+}
+
+void turn(double pwm)
+{
+    if(pwm > 0)
+    {
+      digitalWrite(int1,HIGH);
+      digitalWrite(int2,LOW);
+    }
   
-  SentDatas();
-  Motor();
+    else if(pwm == 0)
+    {
+      digitalWrite(int1,LOW);
+      digitalWrite(int2,LOW);
+    }
+    else if(pwm <0)
+    {
+      digitalWrite(int1,LOW);
+      digitalWrite(int2,HIGH);
+    }
 }
 
 
-
-void SentDatas()
+void SentDatas(int timer)
 {
-  String pack = String(String(sharp)+','+String(timeHCSR04));
+  String pack = String(timer);
   Serial.println(pack); 
 }
 
-void Motor()
+void Motor(double pwm)
 { 
   analogWrite(enable1, abs(pwm)); 
 }
